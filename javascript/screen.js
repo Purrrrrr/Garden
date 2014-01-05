@@ -70,6 +70,11 @@ function makeScreen(letterW, letterH, font, fadeRate) {
   var screen = {
     pixels: pixels,
     draw: redraw,
+    drawPixel: function(x,y,value,color) {
+      y = convert_y(y);
+      x = convert_x(x);
+      drawPixel(x,y,value,color);
+    },
     drawRound: function(x,y,r, color,value,value2) {
       value2 = value2 || 0
       y = convert_y(y);
@@ -91,6 +96,7 @@ function makeScreen(letterW, letterH, font, fadeRate) {
         }
       }
     },
+    hsl: hsl,
     callback: function(i) {
     }
   }
