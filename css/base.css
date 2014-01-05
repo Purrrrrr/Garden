@@ -1,0 +1,26 @@
+html,body {
+  background: black;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+div.line {
+  height: 20px;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+span {
+  color: white;
+  font-family: Courier;
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  height: 20px;
+  width: 9px;
+  font-size: 16px;
+  line-height: 18px;
+  vertical-align: top;
+  overflow: hidden;
+}
