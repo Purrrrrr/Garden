@@ -83,8 +83,8 @@ $(function() {
     });
   }
 
-  
-  var screen = makeScreen(10, 18, "16px Courier", 0.015);
+  var isFF = $.browser.mozilla;
+  var screen = makeScreen(10, 18, "16px Courier", isFF ? 0.100 : 0.015);
   
   var objs = [];
   var stars = [];
