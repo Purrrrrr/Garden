@@ -1,52 +1,97 @@
-function makeScreen(letterW, letterH) {
+function makeScreen(letterW, letterH, font, fadeRate) {
   var ascii = " `````````````````````....................~~~~~~~~~~~~~~~~^^^____--'''||||||||:::::\\\\\\/!!!**}}}}++;;;;<<<>[)7777?iiii11lllll\"\"\"rrrrIIvjJJo%%3333333CsuuYYYVVVn2f&&00000Oy$U4x69ZkkkkGwwhDDDDXXXXXXXX8Abbddddmmm@@@@pRgHH#EqQQQNNBBBBBBWWWWWWWWWWWWWWWWMMMMMMMMMM";
 
-  var screenElem = $('<div class="screen"></div>');
-  $('body').append(screenElem);
+  var canvas = document.createElement('canvas');
+  var real_context = canvas.getContext('2d');
+  var buffer_canvas = document.createElement('canvas');
+  var buffer = buffer_canvas.getContext('2d');
+  fadeRate = Math.max(Math.min(fadeRate,1),0);
+
+  $('body').append(canvas);
 
   var w = 0;
   var h = 0;
-  var factor = 0;
-  var letter_height_factor = letterH/letterW;
+  var pixelW = 0;
+  var pixelH = 0;
+  var factorX = 0;
+  var factorY = 0;
+  var height_to_width_ratio = letterH/letterW;
   var pixels = [];
 
-  var screen = {
-  }
-
-  function makePixel() {
-    var pixel = {
-      elem: $('<span></span>'),
-      val: 0,
-      hue, 0,
-      draw: function(value,hue) {
-        //pixel.elem[0].style.color = 'hsl('+hue+',100%,50%)';
-        pixel.elem[0].innerHTML = ascii[value];
-        pixel.val = value;
-        pixel.hue = hue;
-      }
-    }
-    return pixel;
-  }
-
   function resetScreen() {
-    screenElem.empty();
-    pixels = [];
-    w = Math.floor($(document).width()/letterW)-1;
-    h = Math.floor($(document).height()/letterH)-1;
-    factor = 1/Math.min(w,h);
+    pixelW = $(document).width();
+    pixelH = $(document).height();
+    w = Math.floor(pixelW/letterW)+1;
+    h = Math.floor(pixelH/letterH)+1;
+    factor = Math.min(pixelW,pixelH);
+    factorX = Math.min(pixelW,pixelH)/letterW;
+    factorY = Math.min(pixelW,pixelH)/letterH;
+    if (pixelW/pixelH > 1) {
+      screen.maxX = pixelW/pixelH;
+      screen.maxY = 1
+    } else {
+      screen.maxX = 1
+      screen.maxY = pixelH/pixelW;
+    }
+    canvas.height = buffer_canvas.height = pixelH;
+    canvas.width = buffer_canvas.width = pixelW;
 
     console.log("W: "+w+" H: "+h);
+    console.log("W: "+factorX+" H: "+factorY);
+  }
 
-    for(y = 0; y<h; y++) {
-      var line = [];
-      var lineelem= $('<div class="line"></div>');
-      for(x = 0; x<w; x++) {
-        var pix = makePixel();
-        line.push(pix);
-        lineelem.append(pix.elem);
+  function hsl(h,s,l) {
+    return "hsl("+h+","+s+"%,"+l+"%)";
+  }
+  function redraw() {
+    buffer.fillStyle="rgba(0,0,0,"+fadeRate+")";
+    buffer.fillRect(0,0,canvas.offsetWidth,canvas.offsetHeight);
+    buffer.font=font;
+    screen.callback(i);
+    real_context.drawImage(buffer_canvas, 0, 0);
+  }
+  function drawPixel(x,y,value,color) {
+    value = Math.max(0, value);
+    if (value > 0) {
+      x = letterW*x;
+      y = letterH*(y+1);
+      buffer.fillStyle=color;
+      buffer.fillText(ascii[value], x,y);
+    }
+  }
+
+  function convert_x(c) {
+    return Math.floor(c*factorX);
+  }
+  function convert_y(c) {
+    return Math.floor(c*factorY);
+  }
+
+  var screen = {
+    pixels: pixels,
+    draw: redraw,
+    drawRound: function(x,y,r, color,value,value2) {
+      value2 = value2 || 0
+      y = convert_y(y);
+      x = convert_x(x);
+      var ch = convert_y(r);
+      var cw = convert_x(r);
+      var d = ch*ch
+      for(var cy = y-ch; cy<y+ch; cy++) {
+        for(var cx = x-cw; cx<x+cw; cx++) {
+          var dx = (cx-x);
+          var dy = (cy-y)*height_to_width_ratio;
+          var cd = (dx*dx+dy*dy);
+          if (cd < d) {
+            drawPixel(cx,cy,
+              Math.ceil((d-cd)/d*value*2.55), 
+              hsl(color,100,Math.min(100,0.5+value*0.8+((d-cd)/d*10)))
+            );
+          }
+        }
       }
-      screenElem.append(lineelem);
-      pixels.push(line);
+    },
+    callback: function(i) {
     }
   }
 
@@ -55,14 +100,8 @@ function makeScreen(letterW, letterH) {
 
   var i = 0;
   setInterval(function() {
-    //console.log(i);
-    for(y = 0; y<h; y++) {
-      for(x = 0; x<w; x++) {
-        pixels[y][x].draw((Math.ceil(x/(y+1))+i+y+x)%256, (x+y+i*10)%360);
-      }
-    }
+    redraw(i);
     i++;
-  }, 3000);
-
+  }, 10);
   return screen;
 }
