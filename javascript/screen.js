@@ -66,6 +66,12 @@ function makeScreen(letterW, letterH, font, fadeRate) {
   function convert_y(c) {
     return Math.floor(c*factorY);
   }
+  function convert_y_frac(c) {
+    return c*factorY;
+  }
+  function convert_x_frac(c) {
+    return c*factorX;
+  }
 
   var screen = {
     pixels: pixels,
@@ -75,12 +81,32 @@ function makeScreen(letterW, letterH, font, fadeRate) {
       x = convert_x(x);
       drawPixel(x,y,value,color);
     },
-    drawRound: function(x,y,r, color,value,value2) {
-      value2 = value2 || 0
-      y = convert_y(y);
-      x = convert_x(x);
-      var ch = convert_y(r);
-      var cw = convert_x(r);
+    drawRound: function(x,y,r, color,value) {
+      var start_y = Math.max(0, convert_y(y-r));
+      var start_x = Math.max(0, convert_x(x-r));
+      var end_y = convert_y(Math.min(y+r, screen.maxY));
+      var end_x = convert_x(Math.min(x+r, screen.maxX));
+      var dist = convert_y_frac(r);
+      var dist2 = dist*dist;
+      y = convert_y_frac(y);
+      x = convert_x_frac(x);
+
+      for(var cy = start_y; cy <= end_y; cy++) {
+        for(var cx = start_x; cx <= end_x; cx++) {
+          var dx = (cx-x);
+          var dy = (cy-y)*height_to_width_ratio;
+          var cur_dist2 = (dx*dx+dy*dy);
+          if (cur_dist2 < dist2) {
+            var cur_r = (dist2-cur_dist2)/dist2;
+            drawPixel(cx,cy,
+              Math.ceil(cur_r*value*2.55), 
+              hsl(color,100,Math.min(100,value*0.8+(cur_r*30)))
+            );
+          }
+        }
+      }
+
+      /* var cw = convert_x(r);
       var d = ch*ch
       for(var cy = y-ch; cy<y+ch; cy++) {
         for(var cx = x-cw; cx<x+cw; cx++) {
@@ -94,7 +120,7 @@ function makeScreen(letterW, letterH, font, fadeRate) {
             );
           }
         }
-      }
+        } */
     },
     hsl: hsl,
     callback: function(i) {

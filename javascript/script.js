@@ -1,7 +1,5 @@
 $(function() {
-  /* for(var i = 33; i < 128; i++) {
-    $('body').append($('<p>'+String.fromCharCode(i)+'</p>'));
-  } */
+  var screen = makeScreen(10, 18, "16px Courier", 0.085);
 
   function obj(born, conf) {
     var obj = {
@@ -13,7 +11,7 @@ $(function() {
       dy: -0.015-Math.random()*0.01,
       ax: 0,
       ay: 0.00013,
-      radius: 0.04+Math.random()*0.01,
+      radius: 0.03+Math.random()*0.015,
       color: Math.random()*360,
       brightness: 100,
       decay_rate: 1,
@@ -49,7 +47,7 @@ $(function() {
         var y0 = this.y(t);
         objs.push(obj(i, {
           color: (360+this.color+(Math.random()-0.5)*30)%360,
-          radius: 0.04,
+          radius: Math.max(0.02,this.radius-0.02),
           start_brightness: 50,
           decay_rate: 1,
           start_x: x0,
@@ -82,14 +80,28 @@ $(function() {
       }
     });
   }
-
-  var screen = makeScreen(10, 18, "16px Courier", 0.085);
   
   var objs = [];
   var stars = [];
   for(var s=0;s<100;s++) {
     stars.push(star());
   }
+
+  /*
+  // An object that just grows. Useful for testing the rasterizer.
+  objs.push(obj(0, {
+    start_x: 0.5,
+    start_y: 0.5,
+    dx: 0,
+    dy: 0,
+    ay: 0,
+    decay_rate: 0.01,
+    radius: 0.001,
+    callback: function(i) {
+      this.radius += 0.0001;
+    }
+  }));
+  */
 
   screen.callback = function(i) {
     var newObjs = [];
