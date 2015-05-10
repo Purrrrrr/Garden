@@ -1,6 +1,9 @@
 $(function() {
   var screen = makeScreen(10, 18, "16px Courier", 0.085);
 
+  function rect() {
+  }
+
   function obj(born, conf) {
     var obj = {
       creation: born,
@@ -59,55 +62,11 @@ $(function() {
     });
     return $.extend(rocket, conf || {});
   }
-  function star() {
-    return obj(0, {
-      start_y: screen.maxY*Math.random(),
-      radius: 0.04,
-      brightness: 10,
-      target_brightness: 10,
-      draw: function(screen, i) {
-        if (i%2 == 0) {
-          if (this.brightness == this.target_brightness) {
-            this.target_brightness = Math.ceil(Math.random()*50+10);
-          } else if (this.brightness < this.target_brightness) {
-            this.brightness++;
-          } else {
-            this.brightness--;
-          }
-        }
-        screen.drawPixel(this.start_x, this.start_y,
-          38,screen.hsl(0,0,this.brightness));
-      }
-    });
-  }
   
   var objs = [];
-  var stars = [];
-  for(var s=0;s<100;s++) {
-    stars.push(star());
-  }
-
-  /*
-  // An object that just grows. Useful for testing the rasterizer.
-  objs.push(obj(0, {
-    start_x: 0.5,
-    start_y: 0.5,
-    dx: 0,
-    dy: 0,
-    ay: 0,
-    decay_rate: 0.01,
-    radius: 0.001,
-    callback: function(i) {
-      this.radius += 0.0001;
-    }
-  }));
-  */
 
   screen.callback = function(i) {
     var newObjs = [];
-    for(var l = 0; l<stars.length; l++) {
-      stars[l].draw(screen, i);
-    }
     for(var l = 0; l<objs.length; l++) {
       objs[l].draw(screen, i);
       objs[l].callback(i);
@@ -141,23 +100,6 @@ $(function() {
           }
         }
       }));
-    }
-
-    if (Math.random() > 0.98) {
-      //Spawn a spread of multple rockets!
-      var amount = Math.ceil(Math.random()*4+5);
-      var spread = Math.random()*0.004+0.001;
-      var size = 0.001+Math.random()*0.04
-      var start_x = Math.random()*screen.maxX;
-      var color = 360+Math.random()*360;
-      for(var a = 0; a < amount; a++) {
-        objs.push(rocket(i, {
-          start_x: start_x,
-          dx: spread*(a-amount*0.5),
-          radius: size,
-          color: (color+(a-amount*0.5)*10)%360
-        }));
-      }
     }
   }
 
