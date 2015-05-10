@@ -63,7 +63,7 @@ function makeScreen() {
       x = convert_coord_round(x);
       w = convert_coord_round(w);
       h = convert_coord_round(h);
-      drawPixel(x,y,w,h,color);
+      drawRect(x,y,w,h,color);
     },
     drawLine: function(x,y,x2,y2,w,color) {
       y = convert_coord_round(y);

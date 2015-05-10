@@ -1,71 +1,88 @@
 $(function() {
-  var screen = makeScreen(10, 18, "16px Courier", 0.085);
+  var screen = makeScreen();
 
-  function rect() {
-  }
+  var maxLength = 0.10;
+  var maxWidth = 0.1;
+  var childrenWidthRatio = 0.5;
+  var childrenMaxWidthRatio = 0.7;
+  var childrenLength = 0.001;
+  var childrenMaxLengthRatio = 0.90;
+  var angleVariance = 13*Math.PI/180;
+  var lengthGrowthRate = 0.0008 * maxLength;
+  var widthGrowthRate = 0.0002 * maxWidth;
 
-  function obj(born, conf) {
+  var maxDepth = 7;
+  var childrenGrowthRate = 0.11;
+
+  function plantSegment(born, parent, conf) {
+    var depth = parent.depth ? parent.depth+1 : 1;
     var obj = {
+      parent: parent,
+      depth: depth,
       creation: born,
-      start_brightness: 100,
-      start_x: Math.random()*screen.maxX,
-      start_y: screen.maxY,
-      dx: 0.02*(Math.random()-0.5),
-      dy: -0.015-Math.random()*0.01,
-      ax: 0,
-      ay: 0.00013,
-      radius: 0.03+Math.random()*0.015,
-      color: Math.random()*360,
-      brightness: 100,
-      decay_rate: 1,
-      callback: function(i) {
+      width: parent.width*childrenWidthRatio,
+      length: childrenLength,
+      angle: parent.angle + depth*angleVariance*(2*Math.random()-1),
+      maxWidth: maxWidth,
+      maxLength: maxLength*(1+Math.random()*0.5-depth*0.1),
+      maxChildren: 1.5+depth/3*Math.random(),
+      childrenGrowthRate: childrenGrowthRate*(1+depth/8+(Math.random()-0.5)*0.4),
+      children: [],
+      color: function(i) {
+        var age = Math.min(1, this.width/maxWidth*2);
+        return screen.hsl(100-age*100,100-age*60,60-(this.depth/maxDepth)*25);
       },
-      brightness: function(t) {
-        return Math.ceil(this.start_brightness-t*this.decay_rate);
+      callback: function(i) {
+        this.length = Math.min(Math.min(this.maxLength, this.length+lengthGrowthRate), this.parent.length*childrenMaxLengthRatio);
+        this.width = Math.min(Math.min(this.maxWidth, this.width+widthGrowthRate), this.parent.width*childrenMaxWidthRatio);
+        
+        if (this.depth > maxDepth) return;
+        if (this.children.length >= this.maxChildren) return;
+        
+        var t = i-this.creation;
+        if (this.children.length+1 < Math.sqrt(t)*this.childrenGrowthRate) {
+          var child = plantSegment(i,this);
+          this.children.push(child);
+          objs.push(child);
+        }
+      },
+      draw: function(screen, i) {
+        this.endX = this.parent.endX + this.length*Math.cos(this.angle);
+        this.endY = this.parent.endY + this.length*Math.sin(this.angle);
+        
+        screen.drawLine(this.parent.endX, this.parent.endY, this.endX, this.endY, 
+          this.width, this.color(i));
       },
       isDead: function(i) {
-        return this.brightness(i-this.creation) <= 20;
+        return false;
       },
       onDie: function(i) {
       },
-      x: function(t) {
-        return this.start_x+this.dx*t+this.ax*t*t;
-      },
-      y: function(t) {
-        return this.start_y+this.dy*t+this.ay*t*t;
-      },
-      draw: function(screen, i) {
-        var t = i-this.creation;
-        screen.drawRound(this.x(t), this.y(t),
-          this.radius,this.color,this.brightness(t));
-      }
-    }
+    };
     return $.extend(obj, conf || {});
   }
-  function rocket(born, conf) {
-    var rocket = obj(born, {
-      spawnNew: function(i,dx, dy) {
-        var t = i-this.creation;
-        var x0 = this.x(t);
-        var y0 = this.y(t);
-        objs.push(obj(i, {
-          color: (360+this.color+(Math.random()-0.5)*30)%360,
-          radius: Math.max(0.02,this.radius-0.02),
-          start_brightness: 50,
-          decay_rate: 1,
-          start_x: x0,
-          start_y: y0,
-          dy: dy,
-          dx: dx
-        }));
-      }
-    });
-    return $.extend(rocket, conf || {});
+
+  function trunk(x,y) {
+    return {
+      endX: screen.maxX*x,
+      endY: screen.maxY*y,
+      width: maxLength/childrenWidthRatio,
+      length: 1, //Fake
+      angle: -Math.PI/2
+    };
   }
-  
-  var objs = [];
+
+  objs = [];
+
+  var howManyTrunks = 5;
+  var trunkDistance = 1/(howManyTrunks+1);
+  var trunkPosVariance = 0.05;
+  for(var t = 0; t < howManyTrunks; t++) {
+    objs.push(plantSegment(0,trunk(trunkDistance*(t+1)+(Math.random()*2-1)*trunkPosVariance, 0.85+Math.random()*0.05), {width: 0.01}));
+  }
 
   screen.callback = function(i) {
+    screen.drawRect(0,0.7*screen.maxY,screen.maxX,0.3*screen.maxY, 'yellow');
     var newObjs = [];
     for(var l = 0; l<objs.length; l++) {
       objs[l].draw(screen, i);
@@ -78,29 +95,6 @@ $(function() {
     }
     objs = newObjs;
 
-    if (Math.random() > 0.96) {
-      //Spawn normal rocket
-      objs.push(rocket(i, {
-        onDie: function(i) {
-          //Which may spawn subrockets!
-          if (Math.random() > 0.8) {
-            //But only sometimes
-            var dx =  (Math.random()+1)*0.003;
-            var dy = -(Math.random()+1)*0.004;
-            for(y = 0; y <= 2; y+=1) {
-              this.spawnNew(i,
-                dx+Math.random()*0.001,
-                y*dy+Math.random()*0.01
-              );
-              this.spawnNew(i,
-                -dx-Math.random()*0.001,
-                y*dy+Math.random()*0.001
-              );
-            }
-          }
-        }
-      }));
-    }
   }
 
 });
