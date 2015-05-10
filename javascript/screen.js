@@ -7,7 +7,6 @@ function makeScreen() {
 
   $('body').append(canvas);
   
-  var scale = 10;
   var w = 0;
   var h = 0;
   var pixelW = 0;
@@ -16,9 +15,7 @@ function makeScreen() {
   function resetScreen() {
     pixelW = $(document).width();
     pixelH = $(document).height();
-    w = Math.floor(pixelW/scale)+1;
-    h = Math.floor(pixelH/scale)+1;
-    factor = Math.min(pixelW,pixelH)/scale;
+    factor = Math.min(pixelW,pixelH);
     if (pixelW/pixelH > 1) {
       screen.maxX = pixelW/pixelH;
       screen.maxY = 1
@@ -28,9 +25,6 @@ function makeScreen() {
     }
     canvas.height = buffer_canvas.height = pixelH;
     canvas.width = buffer_canvas.width = pixelW;
-
-    console.log("W: "+w+" H: "+h);
-    console.log("F: "+factor);
   }
 
   function hsl(h,s,l) {
@@ -42,12 +36,9 @@ function makeScreen() {
     screen.callback(i);
     real_context.drawImage(buffer_canvas, 0, 0);
   }
-  function drawPixel(x,y,value,color) {
-    value = Math.max(0, value);
-    if (value > 0) {
-      buffer.fillStyle=color;
-      buffer.fillRect(x,y, scale, scale);
-    }
+  function drawRect(x,y,w,h, color) {
+    buffer.fillStyle=color;
+    buffer.fillRect(x,y, w, h);
   }
   function drawLine(x,y,x2,y2,w,color) {
     buffer.beginPath();
@@ -59,18 +50,20 @@ function makeScreen() {
   }
 
   function convert_coord_round(c) {
-    return Math.floor(c*factor*scale);
+    return Math.floor(c*factor);
   }
   function convert_coord(c) {
-    return c*factor*scale;
+    return c*factor;
   }
 
   var screen = {
     draw: redraw,
-    drawPixel: function(x,y,value,color) {
+    drawRect: function(x,y,w,h,color) {
       y = convert_coord_round(y);
       x = convert_coord_round(x);
-      drawPixel(x,y,value,color);
+      w = convert_coord_round(w);
+      h = convert_coord_round(h);
+      drawPixel(x,y,w,h,color);
     },
     drawLine: function(x,y,x2,y2,w,color) {
       y = convert_coord_round(y);
